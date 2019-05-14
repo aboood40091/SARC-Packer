@@ -1,12 +1,11 @@
-package dev.gigaboy.sarctoolgui;
-
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
@@ -19,8 +18,10 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
@@ -40,8 +41,13 @@ public class Main extends Application {
 	
 	private static final Font lblFont = new Font("Sans Serif", 18);
 	
-	public static File srcFile = null,
+	private static File srcFile = null,
 					   outFile = null;
+
+	private static Label popupLbl = null;
+	private static TextArea cliOutput = null;
+	private static Tab popupTab = null;
+	private static TabPane main;
 	
 	public static void main(String[] args) {
 		launch(args);
@@ -51,10 +57,29 @@ public class Main extends Application {
 	public void start(Stage primaryStage) throws Exception {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.getExtensionFilters().addAll(
-				new ExtensionFilter("YAZ0 Compressed File", "*.szs", "*.sarc", "*.yaz0"));
+				new ExtensionFilter("YAZ0 Compressed File", "*.szs", "*.sarc"));
 		
 		DirectoryChooser dirChooser = new DirectoryChooser();
 		
+		//popup.setAlignment(Pos.CENTER);
+		popupLbl = new Label("Finished");
+		popupLbl.setFont(lblFont);
+		popupLbl.setAlignment(Pos.BASELINE_CENTER);
+		
+		cliOutput = new TextArea();
+		cliOutput.setEditable(false);
+		cliOutput.setFont(new Font("Consolas", 12));
+		cliOutput.setMinSize(WIDTH -16, HEIGHT -105);
+		
+		GridPane popup = new GridPane();
+		popup.setPadding(mainIns);
+		popup.setVgap(5);
+		popup.add(popupLbl, 1, 1);
+		popup.add(cliOutput, 1, 2);
+		
+		popupTab = new Tab("Finished");
+		popupTab.setClosable(false);
+		popupTab.setContent(popup);
 		
 		
 		/////////////////////////////// COMPRESS TAB ///////////////////////////////
@@ -151,12 +176,7 @@ public class Main extends Application {
 			String rbVal = ((RadioButton) compressTG.getSelectedToggle()).getText();
 			boolean isLittle = rbVal.equalsIgnoreCase("Wii U") ? false : true;
 			
-			try {
-				compress(srcFile, outFile, compr, isLittle);
-			} catch (IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			compress(srcFile, outFile, compr, isLittle);
 		});
 		
 		// vbox to hold all the contents of this tab
@@ -178,7 +198,6 @@ public class Main extends Application {
 		Tab compressTab = new Tab("Compress");
 		compressTab.setClosable(false);
 		compressTab.setContent(compressVbox);
-		
 		
 		
 		/////////////////////////////// EXTRACT TAB ///////////////////////////////
@@ -231,14 +250,7 @@ public class Main extends Application {
 		// compress button
 		Button extractBttn = new Button("Extract");
 		// extract file on click
-		extractBttn.setOnAction(evt -> {
-			try {
-				extract(srcFile, outFile);
-			} catch (IOException | InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		});
+		extractBttn.setOnAction(evt -> extract(srcFile, outFile));
 		
 		// vbox to hold all the contents of this tab
 		VBox extractVbox = new VBox();
@@ -256,8 +268,8 @@ public class Main extends Application {
 		extractTab.setContent(extractVbox);
 		
 		// main pain which consists of an extract and compress tab
-		TabPane main = new TabPane();
-		main.getTabs().addAll(compressTab, extractTab);
+		main = new TabPane();
+		main.getTabs().addAll(compressTab, extractTab, popupTab);
 		
 		Scene sc = new Scene(main);
 		primaryStage.setScene(sc);
@@ -265,35 +277,138 @@ public class Main extends Application {
 		primaryStage.setWidth(WIDTH);
 		primaryStage.setHeight(HEIGHT);
 		primaryStage.setResizable(false);
+		primaryStage.setOnCloseRequest(e -> System.exit(0));
 		primaryStage.show();
 	}
 	
+	// for some reason the p.waitFor() in extract doesn't work, so we need to continue trying to move
+	// this directory until it lets us.
+	public static void move(File oldf, File newf) {
+		try {
+			Runtime.getRuntime().exec("cmd.exe /C move \"" + oldf.toString() + "\" \"" + newf.toString() + "\"");
+		} catch (IOException e) {
+			e.printStackTrace();
+			try {
+				Thread.sleep(250); // wait 0.25 seconds before trying again
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			move(oldf, newf);
+		}
+	}
+	
 	// extracts a YAZ0 compressed file
-	public static void extract(File src, File newOut) throws IOException, InterruptedException {
-		String exec = new File("main.py").getAbsolutePath();
-		
-		File curOut = new File(src.toString().replaceFirst("[.][^.]+$", ""));
-		System.out.println("cmd /c python" + " \"" + exec + "\" \"" + src.toString() + "\"");
-		Process p = Runtime.getRuntime().exec("cmd /c python" + " \"" + exec + "\" \"" + src.toString() + "\"");
-		p.waitFor();
-		Files.move(curOut.toPath(), newOut.toPath(), StandardCopyOption.REPLACE_EXISTING);
+	public static void extract(File src, File newOut) {
+		new Thread(() -> {
+			Platform.runLater(() -> {
+				popupTab.setText("Working...");
+				popupLbl.setText("Working...");
+				cliOutput.setText("");
+				main.getSelectionModel().select(popupTab);
+			});
+			
+			StringBuilder sb = new StringBuilder();
+			
+			String exec = new File("main.py").getAbsolutePath();
+			File curOut = new File(src.toString().replaceFirst("[.][^.]+$", ""));
+			
+			ArrayList<String> procList = new ArrayList<String>();
+			procList.add("cmd.exe");
+			procList.add("/C");
+			procList.add(".\\main.py");
+			procList.add("\"" + src.toString() + "\"");
+			
+			ProcessBuilder pb = new ProcessBuilder(procList);
+			Process p = null;
+			try {
+				p = pb.start();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			try {
+				 // reads the output stream, so it doesn't fill up and cause p.waitFor() to fail
+				BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line;
+				while ((line = br.readLine()) != null)
+					sb.append(line + "\n");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			// wait for previous process to finish
+			try {
+				p.waitFor();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			move(curOut, newOut);
+
+			Platform.runLater(() -> {
+				popupTab.setText("Finished");
+				popupLbl.setText("Finished");
+				cliOutput.setText(sb.toString());
+			});
+		}).start();
 	}
 	
 	// compresses a directory in YAZ0 format
-	public static void compress(File src, File out, int compr, boolean isLittleEndian) throws IOException, InterruptedException {
-		ArrayList<String> procList = new ArrayList<String>();
-		procList.add("cmd /c python");
-		procList.add("\"" + new File("main.py").getAbsolutePath() + "\"");
-		if (isLittleEndian)
-			procList.add("-little");
-		procList.add("-compress " + compr);
-		procList.add("-o \"" + out.toString() + "\"");
-		procList.add("\"" + src.toString() + "\"");
-		
-		ProcessBuilder pb = new ProcessBuilder(procList);
-		System.out.println(pb.command());
-		Process p = pb.start();
-		p.waitFor();
+	public static void compress(File src, File out, int compr, boolean isLittleEndian) {
+		new Thread(() -> {
+			Platform.runLater(() -> {
+				popupTab.setText("Working...");
+				popupLbl.setText("Working...");
+				cliOutput.setText("");
+				main.getSelectionModel().select(popupTab);
+			});
+
+			StringBuilder sb = new StringBuilder();
+			
+			ArrayList<String> procList = new ArrayList<String>();
+			procList.add("cmd.exe");
+			procList.add("/C");
+			procList.add(".\\main.py");
+			if (isLittleEndian)
+				procList.add("-little");
+			procList.add("-compress");
+			procList.add(compr + "");
+			procList.add("-o \"" + out.toString() + "\"");
+			procList.add("\"" + src.toString() + "\"");
+			
+			ProcessBuilder pb = new ProcessBuilder(procList);
+			Process p = null;
+			try {
+				p = pb.start();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			try {
+				 // reads the output stream, so it doesn't fill up and cause p.waitFor() to fail
+				BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line;
+				while ((line = br.readLine()) != null)
+					sb.append(line + "\n");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			try {
+				p.waitFor();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			Platform.runLater(() -> {
+				popupTab.setText("Finished");
+				popupLbl.setText("Finished");
+				cliOutput.setText(sb.toString());
+			});
+		}).start();
 	}
 
 }
