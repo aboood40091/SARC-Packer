@@ -26,6 +26,3 @@ Please run `main` to see the list of options.
 ### [aboood40091](https://github.com/aboood40091):
 * Created the sarc_tools themselves
 * All the Python code.
-
-### [Jython](https://www.jython.org/):
-* Jython library - Java library which allows implementation of Python code
