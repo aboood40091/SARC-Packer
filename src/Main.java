@@ -310,7 +310,6 @@ public class Main extends Application {
 			
 			StringBuilder sb = new StringBuilder();
 			
-			String exec = new File("main.py").getAbsolutePath();
 			File curOut = new File(src.toString().replaceFirst("[.][^.]+$", ""));
 			
 			ArrayList<String> procList = new ArrayList<String>();

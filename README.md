@@ -4,7 +4,7 @@ Makes use of SarcLib and libyaz0.
 
 # GUI
 ## Usage:
-Run the program, select options, and hit compress or extract.
+Open the SarcToolGUI.jar file, select options, and hit compress or extract.
 
 ## Requirements:
 * Java v1.8 or higher
