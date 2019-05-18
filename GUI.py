@@ -108,7 +108,7 @@ def GUI_pack(src, out, endianness, compr_lvl):
         return
 
     src = os.path.abspath(src)
-    compr_lvl = ord(compr_lvl)
+    compr_lvl = int(float(compr_lvl))
     pack(src, endianness, compr_lvl, out)
     messagebox.showinfo("Finsihed", "Packing Complete\nSource: " + str(src) + "\nOutput: " + str(out))
 
