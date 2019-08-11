@@ -120,7 +120,7 @@ def main():
 
     # instantiates the primary window
     primary = Tk.Tk()
-    primary.title("SZSTool v0.5 GUI")
+    primary.title("SZSTool v1.0 GUI")
     primary.resizable(False, False)
     primary.option_add("*Dialog.msg.width", 600)
 

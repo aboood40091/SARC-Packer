@@ -1,4 +1,4 @@
-# SZSTool v0.5
+# SZSTool v1.0
 A tool for extracting and packing SARC/SZS files.  
 Makes use of SarcLib and libyaz0.  
 

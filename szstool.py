@@ -189,7 +189,7 @@ def printInfoes():
 
 
 def en():
-    print("SZSTool v1.2")
+    print("SZSTool v1.0")
     print("(C) 2018 CVFD / CVFireDragon\n")
 
     if len(sys.argv) < 2:
@@ -230,7 +230,7 @@ def en():
         sys.exit(1)
         
 def fr():
-    print("SZSTool v1.2")
+    print("SZSTool v1.0")
     print("(C) 2018 CVFD / CVFireDragon\n")
 
     if len(sys.argv) < 2:
@@ -271,7 +271,7 @@ def fr():
         sys.exit(1)
         
 def pg():
-    print("SZSTool v1.2")
+    print("SZSTool v1.0")
     print("(C) 2018 CVFD / CVFireDragon\n")
 
     if len(sys.argv) < 2:
@@ -312,7 +312,7 @@ def pg():
         sys.exit(1)
         
 def es():
-    print("SZSTool v1.2")
+    print("SZSTool v1.0")
     print("(C) 2018 CVFD / CVFireDragon\n")
 
     if len(sys.argv) < 2:
