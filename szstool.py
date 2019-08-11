@@ -1,8 +1,8 @@
 ﻿import os
 import sys
 import time
-import szsLib
-import yazLib
+import SarcLib
+import libyaz0
 
 def pause():
     programPause = input("\nPress the <ENTER> key to exit...\n\n")
@@ -12,18 +12,18 @@ def extract(file):
     with open(file, "rb") as inf:
         inb = inf.read()
 
-    while yazLib.IsYazCompressed(inb):
-        inb = yazLib.decompress(inb)
+    while libyaz0.IsYazCompressed(inb):
+        inb = libyaz0.decompress(inb)
 
     name = os.path.splitext(file)[0]
-    ext = szsLib.guessFileExt(inb)
+    ext = SarcLib.guessFileExt(inb)
 
     if ext != ".sarc":
         with open(''.join([name, ext]), "wb") as out:
             out.write(inb)
 
     else:
-        arc = szsLib.SARC_Archive()
+        arc = SarcLib.SARC_Archive()
         arc.load(inb)
 
         root = os.path.join(os.path.dirname(file), name)
@@ -37,7 +37,7 @@ def extract(file):
             nonlocal files
 
             for checkObj in folder.contents:
-                if isinstance(checkObj, szsLib.File):
+                if isinstance(checkObj, SarcLib.File):
                     files.append(["/".join([path, checkObj.name]), checkObj.data])
 
                 else:
@@ -48,7 +48,7 @@ def extract(file):
                     getAbsPath(checkObj, "/".join([path, checkObj.name]))
 
         for checkObj in arc.contents:
-            if isinstance(checkObj, szsLib.File):
+            if isinstance(checkObj, SarcLib.File):
                 files.append([checkObj.name, checkObj.data])
 
             else:
@@ -72,7 +72,7 @@ def pack(root, endianness, level, outname):
     if root[-1] == "/":
         root = root[:-1]
 
-    arc = szsLib.SARC_Archive(endianness=endianness)
+    arc = SarcLib.SARC_Archive(endianness=endianness)
     lenroot = len(root.split("/"))
 
     for path, dirs, files in os.walk(root):
@@ -101,10 +101,10 @@ def pack(root, endianness, level, outname):
             i = 0
             for folder in filename.split("/")[:-1]:
                 if not i:
-                    exec("folder%i = szsLib.Folder(folder + '/'); arc.addFolder(folder%i)".replace('%i', str(i)))
+                    exec("folder%i = SarcLib.Folder(folder + '/'); arc.addFolder(folder%i)".replace('%i', str(i)))
 
                 else:
-                    exec("folder%i = szsLib.Folder(folder + '/'); folder%m.addFolder(folder%i)".replace('%i', str(i)).replace('%m', str(i - 1)))
+                    exec("folder%i = SarcLib.Folder(folder + '/'); folder%m.addFolder(folder%i)".replace('%i', str(i)).replace('%m', str(i - 1)))
 
                 i += 1
 
@@ -116,15 +116,15 @@ def pack(root, endianness, level, outname):
                 hasFilename = False
 
             if not i:
-                arc.addFile(szsLib.File(file, inb, hasFilename))
+                arc.addFile(SarcLib.File(file, inb, hasFilename))
 
             else:
-                exec("folder%m.addFile(szsLib.File(file, inb, hasFilename))".replace('%m', str(i - 1)))
+                exec("folder%m.addFile(SarcLib.File(file, inb, hasFilename))".replace('%m', str(i - 1)))
 
     data, maxAlignment = arc.save()
 
     if level != -1:
-        outData = yazLib.compress(data, maxAlignment, level)
+        outData = libyaz0.compress(data, maxAlignment, level)
         del data
 
         if not outname:
