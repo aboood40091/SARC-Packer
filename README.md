@@ -7,7 +7,7 @@ Makes use of SarcLib and libyaz0.
 All the options are optional.
  
 ## Options:
-Please run `main` to see the list of options.  
+Please run `szstool -en` to see the list of options.  
 
 ## Requirements:
 * SarcLib v0.2 or higher (get it using pip)
