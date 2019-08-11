@@ -101,7 +101,6 @@ ENV/
 .mypy_cache/
 
 # Other files
-*.bat
 *.sarc
 *.szs
 *.zip
